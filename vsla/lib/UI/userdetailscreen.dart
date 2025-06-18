@@ -22,6 +22,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
   final List<List<TextEditingController>> _savingsRows = [];
   final List<List<TextEditingController>> _loansRows = [];
+  final List<List<TextEditingController>> _welfareRows = [];
+  final List<List<TextEditingController>> _penaltyRows = [];
 
   Future<void> _addLoan() async {
     final amount = double.tryParse(loanCtrl.text);
@@ -51,13 +53,25 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
 
   void _addSavingsRow() {
     setState(() {
-      _savingsRows.add(List.generate(4, (_) => TextEditingController()));
+      _savingsRows.add(List.generate(3, (_) => TextEditingController()));
     });
   }
 
   void _addLoansRow() {
     setState(() {
-      _loansRows.add(List.generate(4, (_) => TextEditingController()));
+      _loansRows.add(List.generate(6, (_) => TextEditingController()));
+    });
+  }
+
+  void _addWelfareRow() {
+    setState(() {
+      _welfareRows.add(List.generate(3, (_) => TextEditingController()));
+    });
+  }
+
+  void _addPenaltyRow() {
+    setState(() {
+      _penaltyRows.add(List.generate(3, (_) => TextEditingController()));
     });
   }
 
@@ -77,6 +91,22 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     }
   }
 
+  void _clearLastWelfareRow() {
+    if (_welfareRows.isNotEmpty) {
+      setState(() {
+        _welfareRows.removeLast();
+      });
+    }
+  }
+
+  void _clearLastPenaltyRow() {
+    if (_penaltyRows.isNotEmpty) {
+      setState(() {
+        _penaltyRows.removeLast();
+      });
+    }
+  }
+
   void _printSavingsLedger() {
     print("Printing Savings Ledger for user: ${widget.user.name}");
   }
@@ -85,12 +115,28 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     print("Printing Loans Ledger for user: ${widget.user.name}");
   }
 
+  void _printWelfareLedger() {
+    print("Printing Welfare Ledger for user: ${widget.user.name}");
+  }
+
+  void _printPenaltiesLedger() {
+    print("Printing Penalties Ledger for user: ${widget.user.name}");
+  }
+
   void _saveSavings() {
     print("Saving Savings data...");
   }
 
   void _saveLoans() {
     print("Saving Loans data...");
+  }
+
+  void _saveWelfare() {
+    print("Saving Welfare data...");
+  }
+
+  void _savePenalties() {
+    print("Saving Penalties data...");
   }
 
   Widget _buildInfoRow(String label, String value) {
@@ -161,11 +207,9 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       children: [
         Table(
           border: TableBorder.all(color: Colors.black45),
-          columnWidths: const {
-            0: FlexColumnWidth(2),
-            1: FlexColumnWidth(2),
-            2: FlexColumnWidth(2),
-            3: FlexColumnWidth(2),
+          columnWidths: {
+            for (int i = 0; i < headers.length; i++)
+              i: const FlexColumnWidth(2),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: [
@@ -193,7 +237,15 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     );
   }
 
-  Widget _buildSavingsSection() {
+  Widget _buildSection({
+    required String title,
+    required List<String> headers,
+    required List<List<TextEditingController>> rows,
+    required VoidCallback onAdd,
+    required VoidCallback onClear,
+    required VoidCallback onSave,
+    VoidCallback? onPrint,
+  }) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
@@ -204,27 +256,28 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       child: ExpansionTile(
         title: Row(
           children: [
-            const Expanded(child: Text("➕ Add Savings")),
-            IconButton(
-              icon: const Icon(Icons.print),
-              onPressed: _printSavingsLedger,
-              tooltip: "Print Savings Ledger",
-            ),
+            Expanded(child: Text(title)),
+            if (onPrint != null)
+              IconButton(
+                icon: const Icon(Icons.print),
+                onPressed: onPrint,
+                tooltip: "Print $title Ledger",
+              ),
           ],
         ),
         childrenPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
           _buildStyledTable(
-            headers: ["DATE", "SAVING NO", "AMOUNT", "RETURNS"],
-            rows: _savingsRows,
-            onAdd: _addSavingsRow,
-            onClear: _clearLastSavingsRow,
+            headers: headers,
+            rows: rows,
+            onAdd: onAdd,
+            onClear: onClear,
           ),
           const SizedBox(height: 12),
           Center(
             child: ElevatedButton(
-              onPressed: _saveSavings,
+              onPressed: onSave,
               child: const Text("Save"),
             ),
           ),
@@ -233,70 +286,109 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     );
   }
 
+  Widget _buildSavingsSection() {
+    return _buildSection(
+      title: "➕ Add Savings",
+      headers: ["DATE", "SAVING NO", "AMOUNT"],
+      rows: _savingsRows,
+      onAdd: _addSavingsRow,
+      onClear: _clearLastSavingsRow,
+      onSave: _saveSavings,
+      onPrint: _printSavingsLedger,
+    );
+  }
+
   Widget _buildLoansSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ExpansionTile(
-        title: Row(
-          children: [
-            const Expanded(child: Text("➕ Add Loans")),
-            IconButton(
-              icon: const Icon(Icons.print),
-              onPressed: _printLoansLedger,
-              tooltip: "Print Loans Ledger",
-            ),
-          ],
-        ),
-        childrenPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        children: [
-          _buildStyledTable(
-            headers: ["DATE", "LOAN NO", "AMOUNT", "BALANCE"],
-            rows: _loansRows,
-            onAdd: _addLoansRow,
-            onClear: _clearLastLoansRow,
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: ElevatedButton(
-              onPressed: _saveLoans,
-              child: const Text("Save"),
-            ),
-          ),
-        ],
-      ),
+    return _buildSection(
+      title: "➕ Add Loans",
+      headers: [
+        "DATE",
+        "LOAN NO",
+        "AMOUNT",
+        "INTEREST",
+        "BALANCE",
+        "LOAN PAYMENT"
+      ],
+      rows: _loansRows,
+      onAdd: _addLoansRow,
+      onClear: _clearLastLoansRow,
+      onSave: _saveLoans,
+      onPrint: _printLoansLedger,
+    );
+  }
+
+  Widget _buildWelfareSection() {
+    return _buildSection(
+      title: "➕ Welfare",
+      headers: ["DATE", "WELFARE NO", "AMOUNT"],
+      rows: _welfareRows,
+      onAdd: _addWelfareRow,
+      onClear: _clearLastWelfareRow,
+      onSave: _saveWelfare,
+      onPrint: _printWelfareLedger,
+    );
+  }
+
+  Widget _buildPenaltiesSection() {
+    return _buildSection(
+      title: "➕ Penalties",
+      headers: ["DATE", "PENALTY NO", "AMOUNT"],
+      rows: _penaltyRows,
+      onAdd: _addPenaltyRow,
+      onClear: _clearLastPenaltyRow,
+      onSave: _savePenalties,
+      onPrint: _printPenaltiesLedger,
     );
   }
 
   Widget _buildClientInformation() {
     final user = widget.user;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Column(
-        children: [
-          _buildInfoRow("Client Name", user.name),
-          const Divider(),
-          _buildInfoRow("Client ID", "CL-00123"),
-          const Divider(),
-          _buildInfoRow("ID Number", "1234567890"),
-          const Divider(),
-          _buildInfoRow("Contact", "+123456789"),
-          const Divider(),
-          _buildInfoRow("Address", "123 Village Lane"),
-          const Divider(),
-          _buildInfoRow("Date Opened", "2025-06-18"),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow("Client Name", user.name),
+                const Divider(),
+                _buildInfoRow("Client ID", "CL-00123"),
+                const Divider(),
+                _buildInfoRow("ID Number", "1234567890"),
+                const Divider(),
+                _buildInfoRow("Contact", "+123456789"),
+                const Divider(),
+                _buildInfoRow("Address", "123 Village Lane"),
+                const Divider(),
+                _buildInfoRow("Date Opened", "2025-06-18"),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 20),
+        Container(
+          width: 400,
+          height: 250,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade400),
+          ),
+          child: const Center(
+            child: Text(
+              "ID Image",
+              style: TextStyle(color: Colors.black54),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -315,18 +407,14 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
           children: [
             const SizedBox(height: 16),
             _buildClientInformation(),
-            const SizedBox(height: 20), // Reduced padding here
+            const SizedBox(height: 20),
             Text("Manage Account",
                 style: Theme.of(context).textTheme.headline6),
             const SizedBox(height: 20),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildSavingsSection()),
-                const SizedBox(width: 20),
-                Expanded(child: _buildLoansSection()),
-              ],
-            ),
+            _buildSavingsSection(),
+            _buildLoansSection(),
+            _buildWelfareSection(),
+            _buildPenaltiesSection(),
           ],
         ),
       ),
