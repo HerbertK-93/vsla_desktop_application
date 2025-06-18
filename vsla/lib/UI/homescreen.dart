@@ -1,5 +1,9 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:vsla/UI/accountlistscreen.dart';
+import 'package:vsla/UI/createaccountscreen.dart';
+import 'package:vsla/UI/loansscreen.dart';
+import 'package:vsla/UI/savingsscreen.dart';
+import 'package:vsla/UI/userdetailscreen.dart';
 import '../data/database.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -11,161 +15,166 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _nameController = TextEditingController();
-  late Future<List<User>> _users;
+  final TextEditingController _searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUsers();
-  }
-
-  void _loadUsers() {
-    _users = widget.database.getAllUsers();
-  }
-
-  Future<void> _addUser() async {
-    if (_nameController.text.isEmpty) return;
-    await widget.database.createUser(
-      UsersCompanion(name: drift.Value(_nameController.text)),
-    );
-    _nameController.clear();
-    setState(() {
-      _loadUsers();
-    });
-  }
-
-  void _openUserDetails(User user) {
+  void _navigateToCreateAccount() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => UserDetailScreen(user: user, database: widget.database),
+        builder: (_) => CreateAccountScreen(database: widget.database),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Loan & Savings App")),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(children: [
-            Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: "User Name"),
+  void _navigateToAccountList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AccountListScreen(database: widget.database),
+      ),
+    );
+  }
+
+  void _navigateToSavingsList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SavingsScreen(),
+      ),
+    );
+  }
+
+  void _navigateToLoansList() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoansScreen(),
+      ),
+    );
+  }
+
+  Widget _buildSectionItem({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              ElevatedButton(
-                  onPressed: _addUser, child: const Text("Add User")),
-            ]),
-            const SizedBox(height: 20),
-            Expanded(
-              child: FutureBuilder<List<User>>(
-                future: _users,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text("Error: ${snapshot.error}"));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text("No users found."));
-                  }
-                  return ListView.builder(
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      final user = snapshot.data![index];
-                      return ListTile(
-                        title: Text(user.name),
-                        onTap: () => _openUserDetails(user),
-                      );
-                    },
-                  );
-                },
-              ),
             ),
-          ]),
+            const Icon(Icons.arrow_forward_ios, size: 20, color: Colors.grey),
+          ],
         ),
       ),
     );
   }
-}
-
-class UserDetailScreen extends StatefulWidget {
-  final AppDatabase database;
-  final User user;
-
-  const UserDetailScreen(
-      {super.key, required this.database, required this.user});
-
-  @override
-  State<UserDetailScreen> createState() => _UserDetailScreenState();
-}
-
-class _UserDetailScreenState extends State<UserDetailScreen> {
-  final loanCtrl = TextEditingController();
-  final savingCtrl = TextEditingController();
-
-  Future<void> _addLoan() async {
-    final amount = double.tryParse(loanCtrl.text);
-    if (amount != null) {
-      await widget.database.createLoan(LoansCompanion(
-        userId: drift.Value(widget.user.id),
-        amount: drift.Value(amount),
-        startDate: drift.Value(DateTime.now()),
-        dueDate: drift.Value(DateTime.now().add(const Duration(days: 30))),
-        status: const drift.Value("ongoing"),
-      ));
-      loanCtrl.clear();
-    }
-  }
-
-  Future<void> _addSaving() async {
-    final amount = double.tryParse(savingCtrl.text);
-    if (amount != null) {
-      await widget.database.createSaving(SavingsCompanion(
-        userId: drift.Value(widget.user.id),
-        amount: drift.Value(amount),
-        date: drift.Value(DateTime.now()),
-      ));
-      savingCtrl.clear();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.user.name)),
+      appBar: AppBar(
+        title: const Text(
+          "Village Savings and Loans Association",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: loanCtrl,
-                  decoration: const InputDecoration(labelText: "Loan Amount"),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade300),
                 ),
               ),
-              ElevatedButton(
-                  onPressed: _addLoan, child: const Text("Add Loan")),
-            ]),
-            const SizedBox(height: 10),
-            Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: savingCtrl,
-                  decoration: const InputDecoration(labelText: "Saving Amount"),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _navigateToCreateAccount,
+                    icon: const Icon(Icons.person_add_alt_1_outlined),
+                    label: const Text("Create New Account"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(
+                          color: theme.colorScheme.primary.withOpacity(0.4)),
+                      textStyle: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  const SizedBox(width: 32),
+                  OutlinedButton.icon(
+                    onPressed: _navigateToAccountList,
+                    icon: const Icon(Icons.account_circle_outlined),
+                    label: const Text("Accounts"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      side: BorderSide(
+                          color: theme.colorScheme.primary.withOpacity(0.4)),
+                      textStyle: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: "Search by Client Name or ID",
+                  prefixIcon: const Icon(Icons.search),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
               ),
-              ElevatedButton(
-                  onPressed: _addSaving, child: const Text("Add Saving")),
-            ]),
-            const SizedBox(height: 20),
-            const Text("Reopen screen to refresh data."),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Savings & Loans Section with navigation
+            _buildSectionItem(
+              title: "Savings",
+              onTap: _navigateToSavingsList,
+            ),
+            _buildSectionItem(
+              title: "Loans",
+              onTap: _navigateToLoansList,
+            ),
           ],
         ),
       ),
